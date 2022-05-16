@@ -189,10 +189,13 @@ void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _lo
 
         // _log.AllocWrite(30*1024, false);
 #if defined(ANDROID) || _WIN32
-        int len = snprintf((char*)_log.PosPtr(), 1024, "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s, %s, %d][",  // **CPPLINT SKIP**
-                           _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal], temp_time,
-                           _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
-                           filename, strFuncName, _info->line);
+        // int len = snprintf((char*)_log.PosPtr(), 1024, "[%s][%s][%" PRIdMAX ", %" PRIdMAX "%s][%s][%s, %s, %d][",  // **CPPLINT SKIP**
+        //                    _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal], temp_time,
+        //                    _info->pid, _info->tid, _info->tid == _info->maintid ? "*" : "", _info->tag ? _info->tag : "",
+        //                    filename, strFuncName, _info->line);
+
+        int len = snprintf((char*)_log.PosPtr(), 1024, "[%s][%s]", _logbody ? levelStrings[_info->level] : levelStrings[kLevelFatal], temp_time);
+
 #else
         int len = 0;
         int max_len = 1024;
@@ -207,40 +210,42 @@ void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _lo
         int temp_time_len = strnlen(temp_time, sizeof(temp_time));
         memcpy((char*)_log.PosPtr() + len, temp_time, temp_time_len);
         len += temp_time_len;
-        memcpy((char*)_log.PosPtr() + len, "][", 2);
-        len += 2;
-        len += logger_itoa((int)_info->pid, (char*)_log.PosPtr() + len, max_len - len, 0);
-        memcpy((char*)_log.PosPtr() + len, ", ", 2);
-        len += 2;
-        len += logger_itoa((int)_info->tid, (char*)_log.PosPtr() + len, max_len - len, 0);
-        if (_info->tid == _info->maintid) {
-            memcpy((char*)_log.PosPtr() + len, "*", 1);
-            len += 1; 
-        }
-        memcpy((char*)_log.PosPtr() + len, "][", 2);
-        len += 2;
-        if (_info->tag) {
-            size_t tag_len = strnlen(_info->tag, 100);
-            memcpy((char*)_log.PosPtr() + len, _info->tag, tag_len);
-            len += tag_len;
-        }
-        memcpy((char*)_log.PosPtr() + len, "][", 2);
-        len += 2;
+        memcpy((char*)_log.PosPtr() + len, "]", 1);
+        len += 1;
+        // memcpy((char*)_log.PosPtr() + len, "][", 2);
+        // len += 2;
+        // len += logger_itoa((int)_info->pid, (char*)_log.PosPtr() + len, max_len - len, 0);
+        // memcpy((char*)_log.PosPtr() + len, ", ", 2);
+        // len += 2;
+        // len += logger_itoa((int)_info->tid, (char*)_log.PosPtr() + len, max_len - len, 0);
+        // if (_info->tid == _info->maintid) {
+        //     memcpy((char*)_log.PosPtr() + len, "*", 1);
+        //     len += 1; 
+        // }
+        // memcpy((char*)_log.PosPtr() + len, "][", 2);
+        // len += 2;
+        // if (_info->tag) {
+        //     size_t tag_len = strnlen(_info->tag, 100);
+        //     memcpy((char*)_log.PosPtr() + len, _info->tag, tag_len);
+        //     len += tag_len;
+        // }
+        // memcpy((char*)_log.PosPtr() + len, "][", 2);
+        // len += 2;
 
-        size_t filename_len = strnlen(filename, 100);
-        memcpy((char*)_log.PosPtr() + len, filename, filename_len);
-        len += filename_len; 
-        memcpy((char*)_log.PosPtr() + len, ", ", 2);
-        len += 2; 
+        // size_t filename_len = strnlen(filename, 100);
+        // memcpy((char*)_log.PosPtr() + len, filename, filename_len);
+        // len += filename_len; 
+        // memcpy((char*)_log.PosPtr() + len, ", ", 2);
+        // len += 2; 
 
-        size_t funname_len = strnlen(strFuncName, 100);
-        memcpy((char*)_log.PosPtr() + len, strFuncName, funname_len);
-        len += funname_len; 
-        memcpy((char*)_log.PosPtr() + len, ", ", 2);
-        len += 2; 
-        len += logger_itoa(_info->line, (char*)_log.PosPtr() + len, max_len - len, 0);
-        memcpy((char*)_log.PosPtr() + len, "][", 2);
-        len += 2;
+        // size_t funname_len = strnlen(strFuncName, 100);
+        // memcpy((char*)_log.PosPtr() + len, strFuncName, funname_len);
+        // len += funname_len; 
+        // memcpy((char*)_log.PosPtr() + len, ", ", 2);
+        // len += 2; 
+        // len += logger_itoa(_info->line, (char*)_log.PosPtr() + len, max_len - len, 0);
+        // memcpy((char*)_log.PosPtr() + len, "][", 2);
+        // len += 2;
 #endif
         assert(0 <= len);
         _log.Length(_log.Pos() + len, _log.Length() + len);
