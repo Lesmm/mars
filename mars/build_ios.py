@@ -18,7 +18,7 @@ IOS_BUILD_OS_ARM64_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHA
 IOS_BUILD_OS_ARMV7_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="armv7" -DENABLE_ARC=0 -DENABLE_BITCODE=1 -DENABLE_VISIBILITY=1 && make -j8 && make install'
 
 GEN_IOS_OS_PROJ = 'cmake ../.. -G Xcode -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="arm64" -DENABLE_ARC=0 -DENABLE_BITCODE=1 -DENABLE_VISIBILITY=1'
-OPEN_SSL_ARCHS = ['x86_64', 'arm64']
+OPEN_SSL_ARCHS = ['x86_64', 'armv7', 'arm64']
 
 
 def build_ios(tag=''):
@@ -39,7 +39,7 @@ def build_ios(tag=''):
 
     if not libtool_libs(libtool_src_lib, libtool_os_dst_lib_armv7):
         return False
-    
+
     # arm64
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
@@ -116,7 +116,7 @@ def build_ios_xlog(tag=''):
                         BUILD_OUT_PATH + '/zstd/libzstd.a']
     if not libtool_libs(libtool_src_libs, libtool_os_dst_lib_armv7):
         return False
-    
+
     # arm64
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
