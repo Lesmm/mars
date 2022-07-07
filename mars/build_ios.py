@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# python2 build_ios.py
+# archs=('arm64' 'armv7' 'x86_64'); for arch in ${archs[@]};do echo $arch; lipo mars -thin $arch -output mars.$arch; otool -L mars.$arch | wc -l;done; ls -al;
+
 import os
 import sys
 import glob
@@ -12,31 +15,50 @@ BUILD_OUT_PATH = 'cmake_build/iOS'
 INSTALL_PATH = BUILD_OUT_PATH + '/Darwin.out'
 
 IOS_BUILD_SIMULATOR_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=SIMULATOR -DIOS_ARCH="x86_64" -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DENABLE_VISIBILITY=1 && make -j8 && make install'
-IOS_BUILD_OS_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="arm64" -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DENABLE_VISIBILITY=1 && make -j8 && make install'
+IOS_BUILD_OS_ARM64_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="arm64" -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DENABLE_VISIBILITY=1 -DIOS_DEPLOYMENT_TARGET=10 && make -j8 && make install'
+IOS_BUILD_OS_ARMV7_CMD = 'cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="armv7" -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DENABLE_VISIBILITY=1 -DIOS_DEPLOYMENT_TARGET=10 && make -j8 && make install'
+# set IOS_DEPLOYMENT_TARGET=10 for error: thread-local storage is not supported for the current target
 
 GEN_IOS_OS_PROJ = 'cmake ../.. -G Xcode -DCMAKE_TOOLCHAIN_FILE=../../ios.toolchain.cmake -DIOS_PLATFORM=OS -DIOS_ARCH="arm64" -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DENABLE_VISIBILITY=1'
-OPEN_SSL_ARCHS = ['x86_64', 'arm64']
+OPEN_SSL_ARCHS = ['x86_64', 'armv7', 'arm64']
 
 
 def build_ios(tag=''):
     gen_mars_revision_file('comm', tag)
-    
+
+    # armv7
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
-    
-    ret = os.system(IOS_BUILD_OS_CMD)
+    ret = os.system(IOS_BUILD_OS_ARMV7_CMD)
     os.chdir(SCRIPT_PATH)
     if ret != 0:
         print('!!!!!!!!!!!build os fail!!!!!!!!!!!!!!!')
         return False
 
-    libtool_os_dst_lib = INSTALL_PATH + '/os'
+    libtool_os_dst_lib_armv7 = INSTALL_PATH + '/os_armv7'
     libtool_src_lib = glob.glob(INSTALL_PATH + '/*.a')
     libtool_src_lib.append(BUILD_OUT_PATH + '/zstd/libzstd.a')
 
-    if not libtool_libs(libtool_src_lib, libtool_os_dst_lib):
+    if not libtool_libs(libtool_src_lib, libtool_os_dst_lib_armv7):
         return False
 
+    # arm64
+    clean(BUILD_OUT_PATH)
+    os.chdir(BUILD_OUT_PATH)
+    ret = os.system(IOS_BUILD_OS_ARM64_CMD)
+    os.chdir(SCRIPT_PATH)
+    if ret != 0:
+        print('!!!!!!!!!!!build os fail!!!!!!!!!!!!!!!')
+        return False
+
+    libtool_os_dst_lib_arm64 = INSTALL_PATH + '/os_arm64'
+    libtool_src_lib = glob.glob(INSTALL_PATH + '/*.a')
+    libtool_src_lib.append(BUILD_OUT_PATH + '/zstd/libzstd.a')
+
+    if not libtool_libs(libtool_src_lib, libtool_os_dst_lib_arm64):
+        return False
+
+    # x86_64
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
     ret = os.system(IOS_BUILD_SIMULATOR_CMD)
@@ -49,8 +71,10 @@ def build_ios(tag=''):
     if not libtool_libs(libtool_src_lib, libtool_simulator_dst_lib):
         return False
 
+    # merge
     lipo_src_libs = []
-    lipo_src_libs.append(libtool_os_dst_lib)
+    lipo_src_libs.append(libtool_os_dst_lib_armv7)
+    lipo_src_libs.append(libtool_os_dst_lib_arm64)
     lipo_src_libs.append(libtool_simulator_dst_lib)
     ssl_lib = INSTALL_PATH + '/ssl'
     if not lipo_thin_libs('openssl/openssl_lib_iOS/libssl.a', ssl_lib, OPEN_SSL_ARCHS):
@@ -77,24 +101,42 @@ def build_ios(tag=''):
 
 def build_ios_xlog(tag=''):
     gen_mars_revision_file('comm', tag)
-    
+
+    # armv7
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
-    
-    ret = os.system(IOS_BUILD_OS_CMD)
+    ret = os.system(IOS_BUILD_OS_ARMV7_CMD)
     os.chdir(SCRIPT_PATH)
     if ret != 0:
         print('!!!!!!!!!!!build os fail!!!!!!!!!!!!!!!')
         return False
 
-    libtool_os_dst_lib = INSTALL_PATH + '/os'
+    libtool_os_dst_lib_armv7 = INSTALL_PATH + '/os_armv7'
     libtool_src_libs = [INSTALL_PATH + '/libcomm.a',
                         INSTALL_PATH + '/libmars-boost.a',
                         INSTALL_PATH + '/libxlog.a',
                         BUILD_OUT_PATH + '/zstd/libzstd.a']
-    if not libtool_libs(libtool_src_libs, libtool_os_dst_lib):
+    if not libtool_libs(libtool_src_libs, libtool_os_dst_lib_armv7):
         return False
 
+    # arm64
+    clean(BUILD_OUT_PATH)
+    os.chdir(BUILD_OUT_PATH)
+    ret = os.system(IOS_BUILD_OS_ARM64_CMD)
+    os.chdir(SCRIPT_PATH)
+    if ret != 0:
+        print('!!!!!!!!!!!build os fail!!!!!!!!!!!!!!!')
+        return False
+
+    libtool_os_dst_lib_arm64 = INSTALL_PATH + '/os_arm64'
+    libtool_src_libs = [INSTALL_PATH + '/libcomm.a',
+                        INSTALL_PATH + '/libmars-boost.a',
+                        INSTALL_PATH + '/libxlog.a',
+                        BUILD_OUT_PATH + '/zstd/libzstd.a']
+    if not libtool_libs(libtool_src_libs, libtool_os_dst_lib_arm64):
+        return False
+
+    # x86_64
     clean(BUILD_OUT_PATH)
     os.chdir(BUILD_OUT_PATH)
     ret = os.system(IOS_BUILD_SIMULATOR_CMD)
@@ -107,8 +149,10 @@ def build_ios_xlog(tag=''):
     if not libtool_libs(libtool_src_libs, libtool_simulator_dst_lib):
         return False
 
+    # merge
     lipo_src_libs = []
-    lipo_src_libs.append(libtool_os_dst_lib)
+    lipo_src_libs.append(libtool_os_dst_lib_armv7)
+    lipo_src_libs.append(libtool_os_dst_lib_arm64)
     lipo_src_libs.append(libtool_simulator_dst_lib)
     lipo_dst_lib = INSTALL_PATH + '/mars'
 
